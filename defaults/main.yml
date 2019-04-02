@@ -1,0 +1,17 @@
+---
+# defaults file for sa-vpn-wireguard
+
+role_dir: "{{role_path}}"
+
+option_allow_unstable_on_debian: true
+
+wg_firewall: ufw
+
+wg_vpn_network_prefix: "192.168.44"
+wg_vpn_network: "{{ wg_vpn_network_prefix }}.1/24"
+wg_vpn_port: 51820
+
+wg_server_private_key: ""
+
+
+wg_epel_repo: "https://copr.fedorainfracloud.org/coprs/jdoss/wireguard/repo/epel-7/jdoss-wireguard-epel-7.repo"
