@@ -1,0 +1,3 @@
+[submodule "roles/sa-vpn-wireguard"]
+        path = roles/sa-vpn-wireguard
+        url = https://github.com/softasap/sa-vpn-wireguard.git
