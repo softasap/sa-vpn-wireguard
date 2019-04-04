@@ -1,4 +1,5 @@
 box-example/roles
+box-example/generated
 *.retry
 tempfile
 local*.sh

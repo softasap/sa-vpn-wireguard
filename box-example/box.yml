@@ -12,9 +12,9 @@
       - {
         name: openhabian
         }
-      - {
-        name: mangorouter
-        }
+      # - {
+      #   name: mangorouter
+      #   }
 
 
 
@@ -33,7 +33,8 @@
 
   roles:
      - {
-         role: "sa-vpn-wireguard"
+         role: "sa-vpn-wireguard",
+         wg_users: "{{ my_vpn_users }}"
        }
 
 
