@@ -149,9 +149,9 @@
 
   - name: WireGuard | Set fact for server private and preshared key
     set_fact:
-       wg_server_private_key:   "{{ wg_server_private_key_raw.content | b64decode }}"
-       wg_server_preshared_key: "{{ wg_server_preshared_key_raw.content | b64decode }}"
-       wg_server_public_key:    "{{ wg_server_public_key_raw.content | b64decode }}"
+       wg_server_private_key:   "{{ wg_server_private_key_raw.content | b64decode | trim }}"
+       wg_server_preshared_key: "{{ wg_server_preshared_key_raw.content | b64decode | trim }}"
+       wg_server_public_key:    "{{ wg_server_public_key_raw.content | b64decode | trim }}"
    
   - name: WireGuard | Stop service (1/2)
     service:

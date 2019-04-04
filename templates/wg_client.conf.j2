@@ -1,7 +1,7 @@
-# {{ item.name }}
+# {{ user.name }}
 [Interface]
 Address = {{ wg_client_peer_address }}
-PrivateKey = {{ wg_client_peer_key }}
+PrivateKey = {{ client_private_key }}
 DNS = {{ wg_vpn_external_address }}
 [Peer]
 PublicKey = {{ wg_server_public_key }}
