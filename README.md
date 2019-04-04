@@ -15,9 +15,30 @@ Simple
 Advanced:
 
 ```YAML
+
+  vars:
+    - root_dir: ..
+
+    - my_vpn_users:
+      - {
+        name: slavko
+        }
+      - {
+        name: openhabian
+        }
+
+
   roles:
     - {
-        role: "sa-vpn-wireguard"
+        role: "sa-vpn-wireguard",
+        option_allow_unstable_on_debian: true,
+        wg_firewall: none, # ufw firewalld iptables
+        wg_vpn_dns_list: "8.8.8.8",
+        wg_vpn_network_prefix: "192.168.44",
+        wg_vpn_network_client_start: 30,
+#        wg_vpn_external_address: "{{ box_address | default(wg_external_address_guessed) }}"
+        wg_vpn_port: 51820,
+        wg_users: "{{ my_vpn_users }}"
       }
 ```
 
