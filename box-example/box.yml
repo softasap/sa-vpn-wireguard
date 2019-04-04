@@ -19,7 +19,6 @@
       setup:
 
   roles:
-       }
      - {
          role: "sa-vpn-wireguard"
        }
