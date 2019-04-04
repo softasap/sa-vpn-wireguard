@@ -86,7 +86,7 @@
       - wireguard
 
   - name: Wireguard | template peer config
-    template: src="wg_server_peer.conf.j2" dest="{{ wg_out_dir }}/{{ user.name }}.conf"
+    template: src="wg_server_peer.conf.j2" dest="{{ wg_peer_dir }}/{{ user.name }}.conf"
     become: yes
     tags:
       - wireguard
