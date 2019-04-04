@@ -115,16 +115,6 @@
   - name: WireGuard | Set fact for server private key
     set_fact:
       wg_server_private_key:  "{{ wg_server_private_key_raw.content | b64decode }}"
-
-  - name: WireGuard | Generate private and public keys for users  
-    shell: "umask 077; wg genkey | tee {{ item.name }}.private | wg pubkey > {{ item.name }}.public"
-    args:
-      chdir: /etc/wireguard
-      creates: "/etc/wireguard/{{ item.name }}.private"
-    become: yes
-    with_items: "{{ wg_users | default([]) }}"    
-    tags:
-      - wireguard     
    
   - name: WireGuard | Stop service (1/2)
     service:
@@ -174,8 +164,10 @@
       - wireguard
 
   - name: Register the clients on the vpn server
-    shell: "wg set wg0 peer {{ item.public_key }}"
-    with_items: "{{wg_users | default([])}}"
+    include_tasks: "use/__add_peer.yml"
+    vars:
+      user: "{{ item }}"
+    with_items: "{{ wg_users | default([]) }}"
 
   - name: Restart the VPN service to save changes
     service:

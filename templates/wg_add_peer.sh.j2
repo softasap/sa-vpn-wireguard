@@ -19,12 +19,12 @@ wg set ${INTERFACE} peer ${PUBLIC_KEY} preshared-key <(echo ${PRESHARED_KEY}) al
 # Logging
 echo "Added peer ${PEER_ADDRESS} with public key ${PUBLIC_KEY}"
 
-# Generate peer config QR code
+# Generate peer config
 cat << END_OF_CONFIG
 [Interface]
 Address = ${PEER_ADDRESS}
 PrivateKey = ${PRIVATE_KEY}
-DNS = {{ wg_vpn_external_address }}
+DNS = {{ wg_vpn_dns_list | default('8.8.8.8') }}
 [Peer]
 PublicKey = ${SERVER_PUBLIC_KEY}
 PresharedKey = ${PRESHARED_KEY}
