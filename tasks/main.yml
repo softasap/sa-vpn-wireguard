@@ -6,5 +6,11 @@
   - include_tasks: tasks_wireguard_firewall.yml
     when: wg_firewall is defined and (wg_firewall != "none")
 
-
+  - name: Download Wireguard Artifacts
+    synchronize: mode=pull src="{{ wg_out_dir }}" dest="{{ playbook_dir }}/generated"
+    ignore_errors: yes
+    become: yes
+    when: docker_test is not defined
+    tags:
+        - wireguard
 

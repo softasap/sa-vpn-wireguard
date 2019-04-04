@@ -18,7 +18,7 @@ wg_vpn_port: 51820
 wg_external_address_guessed: "{{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}"
 
 wg_out_dir: /etc/wireguard/out
-
+wg_peer_dir: /etc/wireguard/conf.d
 
 #wg_server_private_key: ""
 

@@ -12,7 +12,10 @@
           - wireguard
 
       - name: WireGuard | create user configuration output dir
-        file: path="{{ wg_out_dir }}" state="directory"
+        file: path="{{ item }}" state="directory"
+        with_items:
+          - "{{ wg_out_dir }}"
+          - "{{ wg_peer_dir }}"
         become: yes
         tags:
           - wireguard
@@ -207,17 +210,20 @@
     tags:
       - wireguard
 
+  - debug: var="existingpeers"    
+
   - name: WireGuard | Create system peer user
     include_tasks: "use/__add_peer.yml"
     vars:
       user: { name: "system", client_peer_address: "{{ wg_vpn_network_prefix }}.{{ wg_vpn_network_client_start }}" }
-    when:  existingpeers.stdout == "0"
+    when:  existingpeers.stdout == "0" and docker_test is not defined
 
   - name: WireGuard | Register the clients on the vpn server
     include_tasks: "use/__add_peer.yml"
     vars:
       user: "{{ item }}"
     with_items: "{{ wg_users | default([]) }}"
+    when: docker_test is not defined
 
   - name: Restart the VPN service to save changes
     service:
