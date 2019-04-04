@@ -1,0 +1,42 @@
+---
+- hosts: www
+  gather_facts: False
+
+  vars:
+    - root_dir: ..
+
+    - my_vpn_users:
+      - {
+        name: slavko
+        }
+      - {
+        name: openhabian
+        }
+      # - {
+      #   name: mangorouter
+      #   }
+
+
+
+  pre_tasks:
+
+    - name: ANSIBLE PYTHON | install python 2
+      raw: test -e /usr/bin/python || (apt -qqy update && apt install -qy python-minimal)
+      become: yes
+
+    - name:  UNPRIVILEGED USERS | Get acl dependency (ansible unprivileged user operations magic)
+      apt: pkg="acl"
+      become: yes
+
+    - name: gather facts
+      setup:
+
+  roles:
+     - {
+         role: "sa-vpn-wireguard",
+         wg_users: "{{ my_vpn_users }}"
+       }
+
+
+  tasks:
+    - debug: msg="Tasks section"

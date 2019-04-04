@@ -1,0 +1,8 @@
+[Interface]
+Address = {{ wg_vpn_network }}
+SaveConfig = true
+ListenPort = {{ wg_vpn_port }}
+PrivateKey = {{ wg_server_private_key }}
+PostUp = iptables -A FORWARD -i {{ wg_network_interface | default('wg0') }} -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ wg_out_network_interface | default('eth0') }} -j MASQUERADE; ip6tables -A FORWARD -i {{ wg_network_interface | default('wg0') }} -j ACCEPT; ip6tables -t nat -A POSTROUTING -o {{ wg_out_network_interface | default('eth0') }} -j MASQUERADE
+PostDown = iptables -D FORWARD -i {{ wg_network_interface | default('wg0') }} -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ wg_out_network_interface | default('eth0') }} -j MASQUERADE; ip6tables -D FORWARD -i {{ wg_network_interface | default('wg0') }} -j ACCEPT; ip6tables -t nat -D POSTROUTING -o {{ wg_out_network_interface | default('eth0') }} -j MASQUERADE
+

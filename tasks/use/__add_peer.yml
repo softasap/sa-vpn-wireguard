@@ -1,0 +1,93 @@
+# params 
+#     user - context of peer to create
+#     wg_server_preshared_key  server preshared key
+---
+
+  - name: WireGuard | Generate client private key
+    shell: wg genkey
+    register: client_private_key_raw
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | store client priv key as fact
+    set_fact:
+      client_private_key: "{{ client_private_key_raw.stdout }}"
+    tags:
+      - wireguard
+
+  - name: WireGuard | Generate client public key
+    shell: "echo {{ client_private_key }} | wg pubkey"
+    register: client_pub_key_raw
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | store client pub key as fact
+    set_fact:
+      client_pub_key: "{{ client_pub_key_raw.stdout }}"
+    tags:
+      - wireguard
+
+  - name: WireGuard | Retrieve server public key from the interface
+    shell: "wg show {{ wg_network_interface | default('wg0') }} public-key"
+    register: server_pub_key_raw
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | store server pub key
+    set_fact:
+      server_pub_key: "{{ server_pub_key_raw.stdout }}"
+    tags:
+      - wireguard
+
+  - block:
+
+      - name: Wireguard | get peer address, if not set
+        shell: wg show {{ wg_network_interface | default('wg0') }} allowed-ips | cut -f 2 | awk -F'[./]' '{print $1"."$2"."$3"."1+$4"/"$5}' | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | tail -n1
+        args:
+          chdir: /etc/wireguard        
+        register: user_client_peer_address_raw
+        become: yes
+        tags:
+          - wireguard
+
+      - debug: var="user_client_peer_address_raw"    
+
+      - name: WireGuard | store client peer address as fact
+        set_fact:
+          wg_client_peer_address: "{{ user_client_peer_address_raw.stdout }}"
+
+    when: user.client_peer_address  is not defined
+
+  - block:
+
+    - name: WireGuard | store client peer address as fact
+      set_fact:
+        wg_client_peer_address: "{{ user.client_peer_address }}"
+
+    when: user.client_peer_address  is defined
+
+  - name: Wireguard | add peer
+    shell: wg set {{ wg_network_interface | default('wg0') }} peer {{ client_pub_key }} preshared-key <( echo {{ wg_server_preshared_key }} ) allowed-ips {{ wg_client_peer_address }}
+    args:
+      chdir: /etc/wireguard
+      creates: "{{ wg_out_dir }}/{{ user.name }}.conf"
+      executable: /bin/bash
+    become: yes
+    tags:
+      - wireguard
+
+  - name: Wireguard | template user config
+    template: src="wg_client.conf.j2" dest="{{ wg_out_dir }}/{{ user.name }}.conf"
+    become: yes
+    tags:
+      - wireguard
+
+  - name: Wireguard | template peer config
+    template: src="wg_server_peer.conf.j2" dest="{{ wg_peer_dir }}/{{ user.name }}.conf"
+    become: yes
+    tags:
+      - wireguard
+      

@@ -1,0 +1,37 @@
+---
+# defaults file for sa-vpn-wireguard
+
+role_dir: "{{role_path}}"
+
+option_allow_unstable_on_debian: true
+
+wg_firewall: none
+
+wg_vpn_dns_list: "8.8.8.8"
+
+wg_vpn_network_prefix: "192.168.44"
+wg_vpn_network_client_start: 30
+wg_vpn_network: "{{ wg_vpn_network_prefix }}.1/24"
+wg_vpn_external_address: "{{ box_address | default(wg_external_address_guessed) }}"
+wg_vpn_port: 51820
+
+wg_external_address_guessed: "{{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}"
+
+wg_out_dir: /etc/wireguard/out
+wg_peer_dir: /etc/wireguard/conf.d
+
+#wg_server_private_key: ""
+
+
+wg_epel_repo: "https://copr.fedorainfracloud.org/coprs/jdoss/wireguard/repo/epel-7/jdoss-wireguard-epel-7.repo"
+
+wg_users: []
+      # - {
+      #   name: slavko
+      #   }
+      # - {
+      #   name: openhabian
+      #   }
+      # - {
+      #   name: mangorouter
+      #   }

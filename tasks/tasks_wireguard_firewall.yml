@@ -1,0 +1,194 @@
+---
+
+- block:
+
+    - name: WireGuard | Track input chain
+      iptables:
+        chain: INPUT
+        match: conntrack
+        ctstate: ESTABLISHED,RELATED
+        jump: ACCEPT
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | Track forward chain  
+      iptables:
+        chain: FORWARD
+        match: conntrack
+        ctstate: ESTABLISHED,RELATED
+        jump: ACCEPT
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | Allow incoming wireguard connections    
+      iptables:
+        chain: INPUT
+        protocol: udp
+        match: udp
+        destination_port: "{{ wg_vpn_port }}"
+        ctstate: NEW
+        jump: ACCEPT
+      become: yes
+      tags:
+        - wireguard
+      
+    - name: WireGuard | Allow recursive DNS tcp    
+      iptables:
+        chain: INPUT
+        source: "{{ wg_vpn_network_prefix }}.0/24"
+        protocol: tcp
+        match: tcp
+        destination_port: 53
+        ctstate: NEW
+        jump: ACCEPT
+      become: yes
+      tags:
+        - wireguard
+      
+    - name: WireGuard | Allow recursive DNS udp  
+      iptables:
+        chain: INPUT
+        source: "{{ wg_vpn_network_prefix }}.0/24"
+        protocol: udp
+        match: udp
+        destination_port: 53
+        ctstate: NEW
+        jump: ACCEPT
+      become: yes
+      tags:
+        - wireguard
+        
+    - name: WireGuard | Allow forwarding of packets that stay in the tunnel 
+      iptables:
+        chain: FORWARD
+        in_interface: wg0
+        match: conntrack
+        out_interface: wg0
+        ctstate: NEW
+        jump: ACCEPT
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | Set up NAT
+      iptables:
+        table: nat
+        chain: POSTROUTING
+        source: "{{ wg_vpn_network_prefix }}.0/24"
+        out_interface: "{{ ansible_default_ipv4.interface }}"
+        jump: MASQUERADE
+      become: yes
+      tags:
+        - wireguard
+
+    - block:
+
+      - name: WireGuard | Install iptables-persistent
+        apt: pkg=iptables-persistent state=present update_cache=true
+        become: yes
+        tags:
+          - wireguard
+
+      - name: WireGuard | Set up iptables persistence
+        command: netfilter-persistent save
+        become: yes
+        tags:
+          - wireguard
+
+     when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+  when: wg_firewall == "iptables"
+
+
+- block:
+
+  - name: WireGuard | Ensure UFW allows DNS requests from WireGuard clients
+    ufw:
+      to_port: "53"
+      proto: "udp"
+      rule: "allow"
+      from_ip: "{{ wg_vpn_network_prefix }}.0/24"
+    become: yes
+    tags:
+      - wireguard
+
+
+  - name: WireGuard | Ensure UFW allows WireGuard
+    ufw:
+      to_port: "{{ wg_vpn_port }}"
+      proto: "udp"
+      rule: "allow"
+    become: yes
+    tags:
+      - wireguard
+
+
+  # - name: Allow WireGuard through the firewall
+  #   command: "{{ item }}"
+  #   with_items: "{{ wg_firewall_rules }}"
+
+  when: wg_firewall == "ufw"
+
+- block:
+
+  - name: WireGuard | Add as a service to FirewallD
+    template:
+      src: firewalld.xml.j2
+      dest: /etc/firewalld/services/wireguard.xml
+      owner: root
+      group: root
+      mode: 0600
+      force: no
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | enable in firewalld public zone
+    firewalld:
+      zone: public
+      service: wireguard
+      state: enabled
+      permanent: yes
+      immediate: yes
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | Add WireGuard interface to FirewallD public zone
+    firewalld:
+      zone: public
+      interface: wg0
+      state: enabled
+      permanent: yes
+      immediate: yes
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | Enable Masquerading with firewalld
+    firewalld:
+      zone: public
+      masquerade: yes
+      state: enabled
+      permanent: yes
+      immediate: yes
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | Enable WireGuard kernel module
+    modprobe:
+      name: wireguard
+      state: present
+    register: wireguard_module_enabled
+    until:  wireguard_module_enabled is succeeded
+    retries: 10
+    delay: 10
+    failed_when: wireguard_module_enabled is failure
+    become: yes
+    tags:
+      - wireguard
+
+  when: wg_firewall == "firewalld"  

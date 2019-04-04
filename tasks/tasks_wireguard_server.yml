@@ -1,0 +1,260 @@
+---
+
+  - block:
+
+      - name: WireGuard | Dependencies
+        apt:
+          name:
+            - linux-headers-generic
+            - qrencode
+        become: yes
+        tags:
+          - wireguard
+
+      - name: WireGuard | create user configuration output dir
+        file: path="{{ item }}" state="directory"
+        with_items:
+          - "{{ wg_out_dir }}"
+          - "{{ wg_peer_dir }}"
+        become: yes
+        tags:
+          - wireguard
+
+      - name: WireGuard | Enable packet forwarding for IPv4
+        sysctl:
+          name: net.ipv4.ip_forward
+          value: 1
+          sysctl_set: yes
+          state: present
+          reload: yes
+        become: yes
+        tags:
+          - wireguard
+
+      - name : WireGuard | Add repo for Debian
+        apt_repository:
+          repo: deb http://deb.debian.org/debian/ unstable main
+          state: present
+          filename: unstable-wireguard.list
+          update_cache: yes
+        when: ansible_distribution == 'Debian'
+        become: yes
+        tags:
+          - wireguard
+
+      - name: WireGuard | allow apt to use unstable Debian
+        copy:
+          src: limit-unstable
+          dest: /etc/apt/preferences.d/limit-unstable
+        when: ansible_distribution == 'Debian' and option_allow_unstable_on_debian
+        become: yes
+        tags:
+          - wireguard
+
+      - name: WireGuard | Add PPA for ubuntu
+        apt_repository:
+          repo: 'ppa:wireguard/wireguard'
+        become: yes
+        when: ansible_distribution == 'Ubuntu'
+        tags:
+          - wireguard
+
+      - name: WireGuard | install
+        apt:
+          name:
+            - wireguard-dkms
+            - wireguard-tools
+          state: present
+          update_cache: true
+        become: yes
+        tags:
+          - wireguard     
+
+    when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+  - block:
+
+    - name: WireGuard | Epel
+      include_tasks: sa-epel/main.yml
+      tags:
+        - wireguard     
+
+    - name: WireGuard | install Kernel devel
+      yum:
+        name: kernel-devel
+        state: present
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | add repo for CentOS/RHEL 7
+      get_url:
+        url: "{{ wg_epel_repo }}"
+        dest: /etc/yum.repos.d/wireguard.repo
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | install
+      package:
+        name:
+          - wireguard-dkms
+          - wireguard-tools
+        state: present
+      become: yes
+      tags:
+        - wireguard     
+
+    when: ansible_distribution in [ "CentOS", "RedHat" ]
+
+  - name: WireGuard | Check server config provisioned
+    stat:
+      path: /etc/wireguard/wg0.conf
+    register: server_config_provisioned
+    become: yes
+    tags:
+      - wireguard     
+
+  - name: WireGuard | Generate private and public keys for server
+    shell: umask 077; wg genkey | tee server.private | wg pubkey > server.public
+    args:
+      chdir: /etc/wireguard
+    register: server_key_file
+    when: server_config_provisioned.stat.exists == false
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | Generate server preshared key
+    shell: "wg genpsk > /etc/wireguard/server.preshared"
+    args:
+      chdir: /etc/wireguard
+      creates: /etc/wireguard/server.preshared
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | Register WireGuard preshared key as a variable
+    slurp:
+      src: /etc/wireguard/server.preshared
+    register: wg_server_preshared_key_raw
+
+  - name: WireGuard | Register WireGuard private key as a variable
+    slurp:
+      src: /etc/wireguard/server.private
+    register: wg_server_private_key_raw
+
+  - name: WireGuard | Register WireGuard public key as a variable
+    slurp:
+      src: /etc/wireguard/server.public
+    register: wg_server_public_key_raw
+
+
+  - name: WireGuard | Set fact for server private and preshared key
+    set_fact:
+       wg_server_private_key:   "{{ wg_server_private_key_raw.content | b64decode | trim }}"
+       wg_server_preshared_key: "{{ wg_server_preshared_key_raw.content | b64decode | trim }}"
+       wg_server_public_key:    "{{ wg_server_public_key_raw.content | b64decode | trim }}"
+   
+  - name: WireGuard | Stop service (1/2)
+    service:
+      name: wg-quick@wg0.service
+      state: stopped
+    ignore_errors: true  
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | Stop service (2/2)
+    command: wg-quick down wg0
+    ignore_errors: true  
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | template server config
+    template:
+      src: "templates/wg0.conf.j2"
+      dest: "/etc/wireguard/wg0.conf.dist"
+      owner: root
+      group: root
+      mode: 0600
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | template server config
+    template:
+      src: "templates/wg0.conf.j2"
+      dest: "/etc/wireguard/wg0.conf"
+      owner: root
+      group: root
+      mode: 0600
+    when: server_config_provisioned.stat.exists == false      
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | template peer adder
+    template:
+      src: "templates/wg_add_peer.sh.j2"
+      dest: "/etc/wireguard/wg_add_peer.sh"
+      owner: root
+      group: root
+      mode: "u=rwx,g=rx,o=r"
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | template config rebuilder
+    template:
+      src: "templates/wg_recompile_config.sh.j2"
+      dest: "/etc/wireguard/wg_recompile_config.sh"
+      owner: root
+      group: root
+      mode: "u=rwx,g=rx,o=r"
+    become: yes
+    tags:
+      - wireguard      
+
+  - name: WireGuard | Start service
+    service:
+      name: wg-quick@wg0
+      enabled: yes
+      state: started
+    become: yes
+    when: docker_test is not defined
+    tags:
+      - wireguard
+
+  - name: WireGuard | detect existing peers
+    shell: wg show wg0 peers | wc -l
+    register: existingpeers
+    become: yes
+    tags:
+      - wireguard
+
+  - debug: var="existingpeers"    
+
+  - name: WireGuard | Create system peer user
+    include_tasks: "use/__add_peer.yml"
+    vars:
+      user: { name: "system", client_peer_address: "{{ wg_vpn_network_prefix }}.{{ wg_vpn_network_client_start }}" }
+    when:  existingpeers.stdout == "0" and docker_test is not defined
+
+  - name: WireGuard | Register the clients on the vpn server
+    include_tasks: "use/__add_peer.yml"
+    vars:
+      user: "{{ item }}"
+    with_items: "{{ wg_users | default([]) }}"
+    when: docker_test is not defined
+
+  - name: Restart the VPN service to save changes
+    service:
+      name: wg-quick@wg0.service
+      state: restarted
+    when: docker_test is not defined      
+    become: yes
+    tags:
+      - wireguard
+

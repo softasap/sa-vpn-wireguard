@@ -1,0 +1,38 @@
+#!/bin/bash
+
+readonly INTERFACE="wg0"
+
+# Generate peer keys
+readonly PRIVATE_KEY=$(wg genkey)
+readonly PUBLIC_KEY=$(echo ${PRIVATE_KEY} | wg pubkey)
+readonly PRESHARED_KEY=$(wg genpsk)
+
+# Read server key from interface
+readonly SERVER_PUBLIC_KEY=$(wg show ${INTERFACE} public-key)
+
+
+if [ -z "$1" ]; then
+  # Get next free peer IP
+  readonly PEER_ADDRESS=$(wg show ${INTERFACE} allowed-ips | cut -f 2 | awk -F'[./]' '{print $1"."$2"."$3"."1+$4"/"$5}' | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | tail -n1)
+else
+  readonly PEER_ADDRESS=$1
+fi
+
+# Add peer
+wg set ${INTERFACE} peer ${PUBLIC_KEY} preshared-key <(echo ${PRESHARED_KEY}) allowed-ips ${PEER_ADDRESS}
+
+# Logging
+echo "Added peer ${PEER_ADDRESS} with public key ${PUBLIC_KEY}"
+
+# Generate peer config
+cat << END_OF_CONFIG
+[Interface]
+Address = ${PEER_ADDRESS}
+PrivateKey = ${PRIVATE_KEY}
+DNS = {{ wg_vpn_dns_list | default('8.8.8.8') }}
+[Peer]
+PublicKey = ${SERVER_PUBLIC_KEY}
+PresharedKey = ${PRESHARED_KEY}
+AllowedIPs = 0.0.0.0/0
+Endpoint = {{ wg_vpn_external_address }}:{{ wg_vpn_port }}
+END_OF_CONFIG

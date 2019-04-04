@@ -1,0 +1,10 @@
+---
+  - name: EPEL | install as package
+    package:
+      name: epel-release
+      state: present
+    when: ansible_distribution in [ "CentOS", "RedHat" ]
+    become: yes
+    register: result
+    until: result is succeeded
+    retries: 3

@@ -1,0 +1,10 @@
+# {{ user.name }}
+[Interface]
+Address = {{ wg_client_peer_address }}
+PrivateKey = {{ client_private_key }}
+DNS = {{ wg_vpn_external_address }}
+[Peer]
+PublicKey = {{ wg_server_public_key }}
+PresharedKey = {{ wg_server_preshared_key }}
+AllowedIPs = 0.0.0.0/0
+Endpoint = {{ wg_vpn_external_address }}:{{ wg_vpn_port }}
