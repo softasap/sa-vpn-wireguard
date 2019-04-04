@@ -10,8 +10,13 @@ readonly PRESHARED_KEY=$(wg genpsk)
 # Read server key from interface
 readonly SERVER_PUBLIC_KEY=$(wg show ${INTERFACE} public-key)
 
-# Get next free peer IP
-readonly PEER_ADDRESS=$(wg show ${INTERFACE} allowed-ips | cut -f 2 | awk -F'[./]' '{print $1"."$2"."$3"."1+$4"/"$5}' | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | tail -n1)
+
+if [ -z "$1" ]; then
+  # Get next free peer IP
+  readonly PEER_ADDRESS=$(wg show ${INTERFACE} allowed-ips | cut -f 2 | awk -F'[./]' '{print $1"."$2"."$3"."1+$4"/"$5}' | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | tail -n1)
+else
+  readonly PEER_ADDRESS=$1
+fi
 
 # Add peer
 wg set ${INTERFACE} peer ${PUBLIC_KEY} preshared-key <(echo ${PRESHARED_KEY}) allowed-ips ${PEER_ADDRESS}

@@ -105,16 +105,36 @@
     tags:
       - wireguard
 
+  - name: WireGuard | Generate server preshared key
+    shell: "wg genpsk"
+    args:
+      chdir: /etc/wireguard
+      creates: /etc/wireguard/server.preshared
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | Register WireGuard preshared key as a variable
+    slurp:
+      src: /etc/wireguard/server.preshared
+    register: wg_server_preshared_key_raw
+
   - name: WireGuard | Register WireGuard private key as a variable
     slurp:
       src: /etc/wireguard/server.private
     register: wg_server_private_key_raw
 
-  - debug: var="wg_server_private_key_raw"
+  - name: WireGuard | Register WireGuard public key as a variable
+    slurp:
+      src: /etc/wireguard/server.public
+    register: wg_server_public_key_raw
 
-  - name: WireGuard | Set fact for server private key
+
+  - name: WireGuard | Set fact for server private and preshared key
     set_fact:
       wg_server_private_key:  "{{ wg_server_private_key_raw.content | b64decode }}"
+      wg_server_preshared_key: "{{ wg_server_preshared_key_raw | b64decode }}"
+      wg_server_public_key: "{{ wg_server_public_key_raw | b64decode }}"
    
   - name: WireGuard | Stop service (1/2)
     service:

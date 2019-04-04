@@ -35,20 +35,11 @@
     tags:
       - wireguard
 
-  - name: WireGuard | Generate server preshared key
-    shell: "wg genpsk"
-    register: server_preshared_key_raw
-    become: yes
-    tags:
-      - wireguard
-
-  - name: WireGuard | store server pub key and preshared as fact
+  - name: WireGuard | store server pub key
     set_fact:
       server_pub_key: "{{ server_pub_key_raw.stdout }}"
-      server_preshared_key: "{{ server_preshared_key_raw.stdout }}"      
     tags:
       - wireguard
-
 
    - block:
 
