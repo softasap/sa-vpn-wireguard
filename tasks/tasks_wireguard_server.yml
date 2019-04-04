@@ -34,7 +34,7 @@
         apt_repository:
           repo: 'ppa:wireguard/wireguard'
         become: yes
-        when: ansible_distribution == 'Ubuntu
+        when: ansible_distribution == 'Ubuntu'
         tags:
           - wireguard
 
@@ -43,8 +43,8 @@
           name:
             - wireguard-dkms
             - wireguard-tools
-        state: present
-        update_cache: true
+          state: present
+          update_cache: true
         become: yes
         tags:
           - wireguard     
@@ -79,7 +79,7 @@
         name:
           - wireguard-dkms
           - wireguard-tools
-      state: present
+        state: present
       become: yes
       tags:
         - wireguard     
@@ -104,19 +104,24 @@
     tags:
       - wireguard
 
-  - name: Register WireGuard private key as a variable
+  - name: WireGuard | Register WireGuard private key as a variable
     slurp:
       src: /etc/wireguard/server.private
-    register: wg_privatekey
+    register: wg_server_private_key_raw
 
-  - debug: var="wg_privatekey"
+  - debug: var="wg_server_private_key_raw"
+
+  - name: WireGuard | Set fact for server private key
+    set_fact:
+      wg_server_private_key:  "{{ wg_server_private_key_raw.content | b64decode }}"
 
   - name: WireGuard | Generate private and public keys for users  
-    shell: umask 077; wg genkey | tee {{ item.name }}.private | wg pubkey > {{ item.name }}.public
+    shell: "umask 077; wg genkey | tee {{ item.name }}.private | wg pubkey > {{ item.name }}.public"
     args:
       chdir: /etc/wireguard
       creates: "/etc/wireguard/{{ item.name }}.private"
     become: yes
+    with_items: "{{ wg_users | default([]) }}"    
     tags:
       - wireguard     
    
@@ -156,15 +161,14 @@
     tags:
       - wireguard
 
+  - name: Register the clients on the vpn server
+    shell: "wg set wg0 peer {{ item.public_key }}"
+    with_items: "{{wg_users | default([])}}"
 
-- name: Register the clients on the vpn server
-  shell: "wg set wg0 peer {{ item.public_key }}"
-  with_items: "{{users | default([])}}"
-
-- name: Restart the VPN service to save changes
-  service:
-    name: wg-quick@wg0.service
-    state: restarted
-  become: yes
-  tags:
-    - wireguard
+  - name: Restart the VPN service to save changes
+    service:
+      name: wg-quick@wg0.service
+      state: restarted
+    become: yes
+    tags:
+      - wireguard
