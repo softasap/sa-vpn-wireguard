@@ -190,6 +190,7 @@
       owner: root
       group: root
       mode: 0600
+    when: server_config_provisioned.stat.exists == false      
     become: yes
     tags:
       - wireguard
@@ -204,6 +205,17 @@
     become: yes
     tags:
       - wireguard
+
+  - name: WireGuard | template config rebuilder
+    template:
+      src: "templates/wg_recompile_config.sh.j2"
+      dest: "/etc/wireguard/wg_recompile_config.sh"
+      owner: root
+      group: root
+      mode: "u=rwx,g=rx,o=r"
+    become: yes
+    tags:
+      - wireguard      
 
   - name: WireGuard | Start service
     service:
@@ -235,23 +247,6 @@
       user: "{{ item }}"
     with_items: "{{ wg_users | default([]) }}"
     when: docker_test is not defined
-
-  - name: WireGuard | Compile server config (1/2)
-    shell:  cp wg0.conf.dist wg0.conf
-    args:
-      chdir: /etc/wireguard
-    become: yes
-    tags:
-      - wireguard
-
-  - name: WireGuard | Compile server config (2/2)
-    shell:  cat $(ls -t) >> /etc/wireguard/wg0.conf
-    args:
-      chdir: "{{ wg_peer_dir }}"
-    become: yes
-    tags:
-      - wireguard
-
 
   - name: Restart the VPN service to save changes
     service:

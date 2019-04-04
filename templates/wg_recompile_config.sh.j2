@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cp wg0.conf.dist wg0.conf
+cat $(ls conf.d/* -t) >> /etc/wireguard/wg0.conf
