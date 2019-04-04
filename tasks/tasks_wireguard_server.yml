@@ -6,6 +6,7 @@
         apt:
           name:
             - linux-headers-generic
+            - qrencode
         become: yes
         tags:
           - wireguard
@@ -148,6 +149,17 @@
       owner: root
       group: root
       mode: 0600
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | template peer adder
+    template:
+      src: "templates/wg_add_peer.sh.j2"
+      dest: "/etc/wireguard/wg_add_peer.sh"
+      owner: root
+      group: root
+      mode: "u=rwx,g=rx,o=r"
     become: yes
     tags:
       - wireguard

@@ -21,6 +21,26 @@ Advanced:
       }
 ```
 
+## Using mobile clients
+
+So far, one of mobile clients we are aware of is not yet officially released   https://play.google.com/store/apps/details?id=com.wireguard.android
+
+If you want to pass configuration to mobile you can use https://github.com/fukuchi/libqrencode (accessible via apt in debian flavour)
+
+Than your command might look like
+
+```sh
+  ./wg_add_peer.sh > out
+  # edit out if needed
+  cat out | qrencode -t ANSIUTF8
+  # scan with phone
+```
+
+
+
+
+
+
 Copyright and license
 ---------------------
 

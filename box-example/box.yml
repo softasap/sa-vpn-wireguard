@@ -5,6 +5,19 @@
   vars:
     - root_dir: ..
 
+    - my_vpn_users:
+      - {
+        name: slavko
+        }
+      - {
+        name: openhabian
+        }
+      - {
+        name: mangorouter
+        }
+
+
+
   pre_tasks:
 
     - name: ANSIBLE PYTHON | install python 2
