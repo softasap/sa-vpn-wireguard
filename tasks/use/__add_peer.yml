@@ -41,37 +41,37 @@
     tags:
       - wireguard
 
-   - block:
+  - block:
 
-       - name: Wireguard | get peer address, if not set
-         shell: "wg show {{ wg_network_interface | default('wg0') }} allowed-ips | cut -f 2 | awk -F'[./]' '{print $1"."$2"."$3"."1+$4"/"$5}' | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | tail -n1"
-         register: user_client_peer_address_raw
-         become: yes
-         tags:
-            - wireguard
-
-      - name: WireGuard | store client peer address as fact
-        set_fact:
-          wg_client_peer_address: "{{ user.client_peer_address }}"
-
-     when: user.client_peer_address  is not defined
-
-   - block:
+      - name: Wireguard | get peer address, if not set
+        shell: wg show {{ wg_network_interface | default('wg0') }} allowed-ips | cut -f 2 | awk -F'[./]' '{print $1"."$2"."$3"."1+$4"/"$5}' | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | tail -n1
+        register: user_client_peer_address_raw
+        become: yes
+        tags:
+          - wireguard
 
       - name: WireGuard | store client peer address as fact
         set_fact:
           wg_client_peer_address: "{{ user.client_peer_address }}"
 
-     when: user.client_peer_address  is defined
+    when: user.client_peer_address  is not defined
 
-   - name: Wireguard | add peer
-     shell: wg set {{ wg_network_interface | default('wg0') }} peer {{ client_pub_key }} preshared-key {{ server_preshared_key }} allowed-ips {{ wg_client_peer_address }}
-     become: yes
-     tags:
-       - wireguard
+  - block:
 
-   - name: Wireguard | template user config
-     template: src="wg_client_conf.j2" dest="/etc/wireguard/{{ item.name }}.conf"
-     become: yes
-     tags:
-       - wireguard
+    - name: WireGuard | store client peer address as fact
+      set_fact:
+        wg_client_peer_address: "{{ user.client_peer_address }}"
+
+    when: user.client_peer_address  is defined
+
+  - name: Wireguard | add peer
+    shell: wg set {{ wg_network_interface | default('wg0') }} peer {{ client_pub_key }} preshared-key {{ server_preshared_key }} allowed-ips {{ wg_client_peer_address }}
+    become: yes
+    tags:
+      - wireguard
+
+  - name: Wireguard | template user config
+    template: src="wg_client_conf.j2" dest="{{ wg_out_dir }}/{{ item.name }}.conf"
+    become: yes
+    tags:
+      - wireguard

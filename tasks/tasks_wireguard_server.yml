@@ -11,6 +11,23 @@
         tags:
           - wireguard
 
+      - name: WireGuard | create user configuration output dir
+        file: path="{{ wg_out_dir }}" state="directory"
+        become: yes
+        tags:
+          - wireguard
+
+      - name: WireGuard | Enable packet forwarding for IPv4
+        sysctl:
+          name: net.ipv4.ip_forward
+          value: 1
+          sysctl_set: yes
+          state: present
+          reload: yes
+        become: yes
+        tags:
+          - wireguard
+
       - name : WireGuard | Add repo for Debian
         apt_repository:
           repo: deb http://deb.debian.org/debian/ unstable main
@@ -106,7 +123,7 @@
       - wireguard
 
   - name: WireGuard | Generate server preshared key
-    shell: "wg genpsk"
+    shell: "wg genpsk > /etc/wireguard/server.preshared"
     args:
       chdir: /etc/wireguard
       creates: /etc/wireguard/server.preshared
@@ -132,9 +149,9 @@
 
   - name: WireGuard | Set fact for server private and preshared key
     set_fact:
-      wg_server_private_key:  "{{ wg_server_private_key_raw.content | b64decode }}"
-      wg_server_preshared_key: "{{ wg_server_preshared_key_raw | b64decode }}"
-      wg_server_public_key: "{{ wg_server_public_key_raw | b64decode }}"
+       wg_server_private_key:   "{{ wg_server_private_key_raw.content | b64decode }}"
+       wg_server_preshared_key: "{{ wg_server_preshared_key_raw.content | b64decode }}"
+       wg_server_public_key:    "{{ wg_server_public_key_raw.content | b64decode }}"
    
   - name: WireGuard | Stop service (1/2)
     service:
@@ -183,7 +200,20 @@
     tags:
       - wireguard
 
-  - name: Register the clients on the vpn server
+  - name: WireGuard | detect existing peers
+    shell: wg show wg0 peers | wc -l
+    register: existingpeers
+    become: yes
+    tags:
+      - wireguard
+
+  - name: WireGuard | Create system peer user
+    include_tasks: "use/__add_peer.yml"
+    vars:
+      user: { name: "system", client_peer_address: "{{ wg_vpn_network_prefix }}.{{ wg_vpn_network_client_start }}" }
+    when:  existingpeers.stdout == "0"
+
+  - name: WireGuard | Register the clients on the vpn server
     include_tasks: "use/__add_peer.yml"
     vars:
       user: "{{ item }}"
@@ -196,3 +226,4 @@
     become: yes
     tags:
       - wireguard
+
