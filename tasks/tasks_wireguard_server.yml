@@ -121,12 +121,26 @@
       tags:
         - wireguard
 
-    - name: WireGuard | Reboot to activate modprobe wireguard
-      reboot:
+    # - name: WireGuard | Reboot to activate modprobe wireguard
+    #   reboot:
+    #   when: (modprobe_check is failed) and (docker_test is not defined)
+    #   become: yes
+    #   tags:
+    #     - wireguard
+
+    - name: WireGuard | Reboot to activate modprobe wireguard (1/2)
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
       when: (modprobe_check is failed) and (docker_test is not defined)
-      become: yes
-      tags:
-        - wireguard        
+
+    - name: WireGuard | Reboot to activate modprobe wireguard (2/2)
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 300
+      when: (modprobe_check is failed) and (docker_test is not defined)
 
     when: ansible_distribution in [ "CentOS", "RedHat" ]
 
@@ -161,6 +175,16 @@
       become: yes
       tags:
         - wireguard
+
+    - name: WireGuard | Install wireguard      
+      dnf:
+        name: 
+          - wireguard-dkms
+          - wireguard-tools
+        state: present
+      become: yes
+      tags:
+        - wireguard
       
     - name: WireGuard | Check wireguard module loaded
       command: touch /etc/wireguard/.modprobed &&  modprobe wireguard
@@ -173,22 +197,26 @@
       tags:
         - wireguard
 
-    - name: WireGuard | Reboot to activate modprobe wireguard
-      reboot:
-      when: (modprobe_check is failed) and (docker_test is not defined)
-      become: yes
-      tags:
-        - wireguard
+    # - name: WireGuard | Reboot to activate modprobe wireguard
+    #   reboot:
+    #   when: (modprobe_check is failed) and (docker_test is not defined)
+    #   become: yes
+    #   tags:
+    #     - wireguard
 
-    - name: WireGuard | Install wireguard      
-      dnf:
-        name: 
-          - wireguard-dkms
-          - wireguard-tools
-        state: present
-      become: yes
-      tags:
-        - wireguard
+    - name: WireGuard | Reboot to activate modprobe wireguard (1/2)
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+      when: (modprobe_check is failed) and (docker_test is not defined)
+
+    - name: WireGuard | Reboot to activate modprobe wireguard (2/2)
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 300
+      when: (modprobe_check is failed) and (docker_test is not defined)
 
     when: ansible_distribution == 'Fedora'
 
