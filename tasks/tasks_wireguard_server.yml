@@ -1,5 +1,14 @@
 ---
 
+  - name: WireGuard | create configuration dirs
+    file: path="{{ item }}" state="directory"
+    with_items:
+      - "{{ wg_out_dir }}"
+      - "{{ wg_peer_dir }}"
+    become: yes
+    tags:
+      - wireguard
+
   - block:
 
       - name: WireGuard | Dependencies
@@ -7,15 +16,6 @@
           name:
             - linux-headers-generic
             - qrencode
-        become: yes
-        tags:
-          - wireguard
-
-      - name: WireGuard | create user configuration output dir
-        file: path="{{ item }}" state="directory"
-        with_items:
-          - "{{ wg_out_dir }}"
-          - "{{ wg_peer_dir }}"
         become: yes
         tags:
           - wireguard
@@ -79,10 +79,15 @@
       tags:
         - wireguard     
 
-    - name: WireGuard | install Kernel devel
-      yum:
-        name: kernel-devel
-        state: present
+    - name: WireGuard | Dependencies
+      package:
+        name:
+          - qrencode
+          - kernel 
+          - kernel-headers
+          - kernel-devel
+          - dkms
+        state: present  
       become: yes
       tags:
         - wireguard
@@ -103,7 +108,7 @@
         state: present
       become: yes
       tags:
-        - wireguard     
+        - wireguard
 
     when: ansible_distribution in [ "CentOS", "RedHat" ]
 
