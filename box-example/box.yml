@@ -20,17 +20,18 @@
 
   pre_tasks:
 
-    - name: ANSIBLE PYTHON | install python 2
-      raw: test -e /usr/bin/python || (apt -qqy update && apt install -qy python-minimal)
-      become: yes
-
-    - name:  UNPRIVILEGED USERS | Get acl dependency (ansible unprivileged user operations magic)
-      apt: pkg="acl"
-      become: yes
+    # - name: ANSIBLE PYTHON | install python 2
+    #   raw: test -e /usr/bin/python || (apt -qqy update && apt install -qy python-minimal)
+    #   become: yes
 
     - name: gather facts
       setup:
 
+    - name:  UNPRIVILEGED USERS | Get acl dependency (ansible unprivileged user operations magic)
+      apt: pkg="acl"
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+      become: yes
+      
   roles:
      - {
          role: "sa-vpn-wireguard",
