@@ -83,7 +83,7 @@
       package:
         name:
           - qrencode
-          - kernel 
+          - kernel
           - kernel-headers
           - kernel-devel
           - dkms
@@ -110,7 +110,87 @@
       tags:
         - wireguard
 
+    - name: WireGuard | Check wireguard module loaded
+      command: touch /etc/wireguard/.modprobed &&  modprobe wireguard
+      args:
+        creates: /etc/wireguard/.modprobed
+      ignore_errors: true
+      when: docker_test is not defined
+      register: modprobe_check
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | Reboot to activate modprobe wireguard
+      reboot:
+      when: (modprobe_check is failed) and (docker_test is not defined)
+      become: yes
+      tags:
+        - wireguard        
+
     when: ansible_distribution in [ "CentOS", "RedHat" ]
+
+  - block:
+
+    - name: WireGuard | Enable Fedora Copr for jdoss wireguard
+      command: dnf copr enable -y jdoss/wireguard
+      args:
+        creates: /etc/yum.repos.d/_copr_jdoss-wireguard.repo
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | Dependencies
+      package:
+        name:
+          - qrencode
+          - kernel
+          - kernel-headers
+          - kernel-devel
+          - dkms
+        state: present  
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | iptables if no firewall favour
+      package:
+        name:
+          - iptables
+        state: present  
+      become: yes
+      tags:
+        - wireguard
+      
+    - name: WireGuard | Check wireguard module loaded
+      command: touch /etc/wireguard/.modprobed &&  modprobe wireguard
+      args:
+        creates: /etc/wireguard/.modprobed
+      ignore_errors: true
+      when: docker_test is not defined
+      register: modprobe_check
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | Reboot to activate modprobe wireguard
+      reboot:
+      when: (modprobe_check is failed) and (docker_test is not defined)
+      become: yes
+      tags:
+        - wireguard
+
+    - name: WireGuard | Install wireguard      
+      dnf:
+        name: 
+          - wireguard-dkms
+          - wireguard-tools
+        state: present
+      become: yes
+      tags:
+        - wireguard
+
+    when: ansible_distribution == 'Fedora'
 
   - name: WireGuard | Check server config provisioned
     stat:
