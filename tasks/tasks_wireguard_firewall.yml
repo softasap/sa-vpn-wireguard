@@ -125,9 +125,9 @@
       - wireguard
 
 
-  # - name: Allow WireGuard through the firewall
-  #   command: "{{ item }}"
-  #   with_items: "{{ wg_firewall_rules }}"
+  - name: Allow WireGuard through the firewall
+    command: "{{ item }}"
+    with_items: "{{ wg_firewall_rules }}"
 
   when: wg_firewall == "ufw"
 
