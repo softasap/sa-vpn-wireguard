@@ -250,16 +250,19 @@
   - name: WireGuard | Register WireGuard preshared key as a variable
     slurp:
       src: /etc/wireguard/server.preshared
+    become: yes
     register: wg_server_preshared_key_raw
 
   - name: WireGuard | Register WireGuard private key as a variable
     slurp:
       src: /etc/wireguard/server.private
+    become: yes
     register: wg_server_private_key_raw
 
   - name: WireGuard | Register WireGuard public key as a variable
     slurp:
       src: /etc/wireguard/server.public
+    become: yes
     register: wg_server_public_key_raw
 
 
