@@ -12,7 +12,7 @@
       tags:
         - wireguard
 
-    - name: WireGuard | Track forward chain  
+    - name: WireGuard | Track forward chain
       iptables:
         chain: FORWARD
         match: conntrack
@@ -22,7 +22,7 @@
       tags:
         - wireguard
 
-    - name: WireGuard | Allow incoming wireguard connections    
+    - name: WireGuard | Allow incoming wireguard connections
       iptables:
         chain: INPUT
         protocol: udp
@@ -33,8 +33,8 @@
       become: yes
       tags:
         - wireguard
-      
-    - name: WireGuard | Allow recursive DNS tcp    
+
+    - name: WireGuard | Allow recursive DNS tcp
       iptables:
         chain: INPUT
         source: "{{ wg_vpn_network_prefix }}.0/24"
@@ -46,8 +46,8 @@
       become: yes
       tags:
         - wireguard
-      
-    - name: WireGuard | Allow recursive DNS udp  
+
+    - name: WireGuard | Allow recursive DNS udp
       iptables:
         chain: INPUT
         source: "{{ wg_vpn_network_prefix }}.0/24"
@@ -59,8 +59,8 @@
       become: yes
       tags:
         - wireguard
-        
-    - name: WireGuard | Allow forwarding of packets that stay in the tunnel 
+
+    - name: WireGuard | Allow forwarding of packets that stay in the tunnel
       iptables:
         chain: FORWARD
         in_interface: wg0
@@ -97,10 +97,9 @@
         tags:
           - wireguard
 
-     when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
   when: wg_firewall == "iptables"
-
 
 - block:
 
@@ -191,4 +190,4 @@
     tags:
       - wireguard
 
-  when: wg_firewall == "firewalld"  
+  when: wg_firewall == "firewalld"
