@@ -28,6 +28,7 @@
           state: present
           reload: yes
         become: yes
+        when: docker_test is not defined
         tags:
           - wireguard
 
@@ -68,7 +69,7 @@
           update_cache: true
         become: yes
         tags:
-          - wireguard     
+          - wireguard
 
     when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
@@ -77,7 +78,7 @@
     - name: WireGuard | Epel
       include_tasks: sa-epel/main.yml
       tags:
-        - wireguard     
+        - wireguard
 
     - name: WireGuard | Dependencies
       package:
@@ -87,7 +88,7 @@
           - kernel-headers
           - kernel-devel
           - dkms
-        state: present  
+        state: present
       become: yes
       tags:
         - wireguard
@@ -162,7 +163,7 @@
           - kernel-headers
           - kernel-devel
           - dkms
-        state: present  
+        state: present
       become: yes
       tags:
         - wireguard
@@ -171,21 +172,21 @@
       package:
         name:
           - iptables
-        state: present  
+        state: present
       become: yes
       tags:
         - wireguard
 
-    - name: WireGuard | Install wireguard      
+    - name: WireGuard | Install wireguard
       dnf:
-        name: 
+        name:
           - wireguard-dkms
           - wireguard-tools
         state: present
       become: yes
       tags:
         - wireguard
-      
+
     - name: WireGuard | Check wireguard module loaded
       command: touch /etc/wireguard/.modprobed &&  modprobe wireguard
       args:
@@ -226,17 +227,18 @@
     register: server_config_provisioned
     become: yes
     tags:
-      - wireguard     
+      - wireguard
 
   - name: WireGuard | Generate private and public keys for server
     shell: umask 077; wg genkey | tee server.private | wg pubkey > server.public
     args:
       chdir: /etc/wireguard
     register: server_key_file
-    when: server_config_provisioned.stat.exists == false
+    when: not server_config_provisioned.stat.exists
     become: yes
     tags:
       - wireguard
+      - skip_ansible_lint
 
   - name: WireGuard | Generate server preshared key
     shell: "wg genpsk > /etc/wireguard/server.preshared"
@@ -271,19 +273,20 @@
        wg_server_private_key:   "{{ wg_server_private_key_raw.content | b64decode | trim }}"
        wg_server_preshared_key: "{{ wg_server_preshared_key_raw.content | b64decode | trim }}"
        wg_server_public_key:    "{{ wg_server_public_key_raw.content | b64decode | trim }}"
-   
+
   - name: WireGuard | Stop service (1/2)
     service:
       name: wg-quick@wg0.service
       state: stopped
-    ignore_errors: true  
+    ignore_errors: true
     become: yes
     tags:
       - wireguard
 
   - name: WireGuard | Stop service (2/2)
     command: wg-quick down wg0
-    ignore_errors: true  
+    ignore_errors: true
+    changed_when: False
     become: yes
     tags:
       - wireguard
@@ -306,7 +309,7 @@
       owner: root
       group: root
       mode: 0600
-    when: server_config_provisioned.stat.exists == false      
+    when: not server_config_provisioned.stat.exists
     become: yes
     tags:
       - wireguard
@@ -331,7 +334,7 @@
       mode: "u=rwx,g=rx,o=r"
     become: yes
     tags:
-      - wireguard      
+      - wireguard
 
   - name: WireGuard | Start service
     service:
@@ -345,12 +348,14 @@
 
   - name: WireGuard | detect existing peers
     shell: wg show wg0 peers | wc -l
+    changed_when: False
     register: existingpeers
     become: yes
     tags:
       - wireguard
+      - skip_ansible_lint
 
-  - debug: var="existingpeers"    
+  - debug: var="existingpeers"
 
   - name: WireGuard | Create system peer user
     include_tasks: "use/__add_peer.yml"
@@ -369,7 +374,7 @@
     service:
       name: wg-quick@wg0.service
       state: restarted
-    when: docker_test is not defined      
+    when: docker_test is not defined
     become: yes
     tags:
       - wireguard

@@ -1,4 +1,4 @@
-# params 
+# params
 #     user - context of peer to create
 #     wg_server_preshared_key  server preshared key
 ---
@@ -9,6 +9,7 @@
     become: yes
     tags:
       - wireguard
+      - skip_ansible_lint
 
   - name: WireGuard | store client priv key as fact
     set_fact:
@@ -22,6 +23,7 @@
     become: yes
     tags:
       - wireguard
+      - skip_ansible_lint
 
   - name: WireGuard | store client pub key as fact
     set_fact:
@@ -35,6 +37,7 @@
     become: yes
     tags:
       - wireguard
+      - skip_ansible_lint
 
   - name: WireGuard | store server pub key
     set_fact:
@@ -47,13 +50,13 @@
       - name: Wireguard | get peer address, if not set
         shell: wg show {{ wg_network_interface | default('wg0') }} allowed-ips | cut -f 2 | awk -F'[./]' '{print $1"."$2"."$3"."1+$4"/"$5}' | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | tail -n1
         args:
-          chdir: /etc/wireguard        
+          chdir: /etc/wireguard
         register: user_client_peer_address_raw
         become: yes
         tags:
           - wireguard
 
-      - debug: var="user_client_peer_address_raw"    
+      - debug: var="user_client_peer_address_raw"
 
       - name: WireGuard | store client peer address as fact
         set_fact:
@@ -90,4 +93,3 @@
     become: yes
     tags:
       - wireguard
-      
