@@ -28,6 +28,7 @@
           state: present
           reload: yes
         become: yes
+        when: docker_test is not defined
         tags:
           - wireguard
 
