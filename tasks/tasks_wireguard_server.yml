@@ -32,39 +32,55 @@
         tags:
           - wireguard
 
-      - name : WireGuard | Add repo for Debian
-        apt_repository:
-          repo: deb http://deb.debian.org/debian/ unstable main
-          state: present
-          filename: unstable-wireguard.list
-          update_cache: yes
-        when: ansible_distribution == 'Debian'
-        become: yes
-        tags:
-          - wireguard
+#      - name : WireGuard | Add repo for Debian
+#        apt_repository:
+#          repo: deb http://deb.debian.org/debian/ unstable main
+#          state: present
+#          filename: unstable-wireguard.list
+#          update_cache: yes
+#        when: ansible_distribution == 'Debian'
+#        become: yes
+#        tags:
+#          - wireguard
 
-      - name: WireGuard | allow apt to use unstable Debian
-        copy:
-          src: limit-unstable
-          dest: /etc/apt/preferences.d/limit-unstable
-        when: ansible_distribution == 'Debian' and option_allow_unstable_on_debian
-        become: yes
-        tags:
-          - wireguard
+#      - name: WireGuard | allow apt to use unstable Debian
+#        copy:
+#          src: limit-unstable
+#          dest: /etc/apt/preferences.d/limit-unstable
+#        when: ansible_distribution == 'Debian' and option_allow_unstable_on_debian
+#        become: yes
+#        tags:
+#          - wireguard
 
-      - name: WireGuard | Add PPA for ubuntu
-        apt_repository:
-          repo: 'ppa:wireguard/wireguard'
-        become: yes
-        when: ansible_distribution == 'Ubuntu'
-        tags:
-          - wireguard
+#      - name: WireGuard | Add PPA for ubuntu (1/2)
+#        apt_repository:
+##          repo: 'ppa:wireguard/wireguard'
+#          repo: deb http://ppa.launchpad.net/wireguard/wireguard/ubuntu bionic main
+#          state: present
+#          filename: wireguard.list
+#        become: yes
+#        when: ansible_distribution == 'Ubuntu'
+#        tags:
+#          - wireguard
+
+ #     - name: WireGuard | Add PPA for ubuntu (2/2)
+#        apt_repository: 
+##          repo: 'ppa:wireguard/wireguard'
+#          repo: deb-src http://ppa.launchpad.net/wireguard/wireguard/ubuntu bionic main
+#          state: present
+#          filename: wireguard.list
+#        become: yes
+#        when: ansible_distribution == 'Ubuntu'
+#        tags:
+#          - wireguard
+
 
       - name: WireGuard | install
         apt:
           name:
-            - wireguard-dkms
-            - wireguard-tools
+            - wireguard
+#            - wireguard-dkms
+#            - wireguard-tools
           state: present
           update_cache: true
         become: yes
